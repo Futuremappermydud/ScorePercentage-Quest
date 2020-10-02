@@ -1,0 +1,28 @@
+{
+  "sharedDir": "shared",
+  "dependenciesDir": "extern",
+  "info": {
+    "name": "ScorePercentage",
+    "id": "ScorePercentage",
+    "version": "2.0.0",
+    "url": null,
+    "additionalData": {}
+  },
+  "dependencies": [
+    {
+      "id": "beatsaber-hook",
+      "versionRange": "^0.7.1",
+      "additionalData": {
+        "extraFiles": [
+          "src/inline-hook"
+        ]
+      }
+    },
+    {
+      "id": "codegen",
+      "versionRange": "^0.2.3",
+      "additionalData": {}
+    }
+  ],
+  "additionalData": {}
+}
