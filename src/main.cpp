@@ -1,37 +1,5 @@
 #include "../include/mod_interface.hpp"
-
-// Any specific types you would want here
-
-#include <unordered_set>  // specific types that you might want here
-
-// Any beatsaber-hook specific includes here
-
-#include "../extern/beatsaber-hook/shared/utils/utils.h"
-#include "../extern/beatsaber-hook/shared/utils/logging.hpp"
-// For displaying modloader information (ex: Modloader.getInfo().name)
-#include "../extern/modloader/shared/modloader.hpp"
-// For using il2cpp_utils:: methods
-#include "../extern/beatsaber-hook/shared/utils/il2cpp-utils.hpp" 
-// For using il2cpp_functions:: methods
-#include "../extern/beatsaber-hook/shared/utils/il2cpp-functions.hpp"
-// For using commonly used types (such as Vector2, Vector3, Color, Scene, etc.)
-#include "../extern/beatsaber-hook/shared/utils/typedefs.h"
-// For using configuration
-#include "../extern/beatsaber-hook/shared/config/config-utils.hpp"
-#include "../extern/codegen/include/GlobalNamespace/ResultsViewController.hpp"
-#include "../extern/codegen/include/GlobalNamespace/StandardLevelDetailView.hpp"
-#include "../extern/codegen/include/GlobalNamespace/PlayerLevelStatsData.hpp"
-#include "../extern/codegen/include/System/Math.hpp"
-#include "../extern/codegen/include/GlobalNamespace/ScoreFormatter.hpp"
-#include "../extern/codegen/include/UnityEngine/GameObject.hpp"
-#include "../extern/codegen/include/TMPro/TextMeshProUGUI.hpp"
-#include "../extern/codegen/include/GlobalNamespace/LevelCompletionResults.hpp"
-#include "../extern/codegen/include/GlobalNamespace/PlayerData.hpp"
-#include "../extern/codegen/include/GlobalNamespace/IDifficultyBeatmap.hpp"
-#include "../extern/codegen/include/GlobalNamespace/IDifficultyBeatmapSet.hpp"
-#include "../extern/codegen/include/GlobalNamespace/IBeatmapLevel.hpp"
-#include "../extern/codegen/include/GlobalNamespace/BeatmapData.hpp"
-#include "../extern/codegen/include/GlobalNamespace/GameplayModifiers.hpp"
+#include "../include/UI.hpp"
 
 static ModInfo modInfo;
 
@@ -54,7 +22,7 @@ Configuration& getConfig() {
 static struct Config_t {
     bool EnableMenuHighscore = true;
     bool EnableLevelEndRank = true;
-    bool EnableAvarageCutScore = true;
+    bool EnableAverageCutScore = true;
     bool EnableScoreDifference = true;
     bool EnableScorePercentageDifference = true;
 } Config;
@@ -100,38 +68,32 @@ static double calculatePercentage(int maxScore, int resultScore)
     return resultPercentage;
 }
 
-MAKE_HOOK_OFFSETLESS(Menu, void, StandardLevelDetailView* self) {
-    Menu(self);
-    if (self->playerStatsContainer)
+MAKE_HOOK_OFFSETLESS(Menu, void, LevelStatsView* self, IDifficultyBeatmap* difficultyBeatmap, PlayerData* playerData) {
+    Menu(self, difficultyBeatmap, playerData);
+    if (playerData != nullptr)
     {
-        if (self->showPlayerStats && self->playerData != nullptr)
-         {
-                    self->playerStatsContainer->SetActive(true);
-                    PlayerLevelStatsData* playerLevelStatsData = self->playerData->GetPlayerLevelStatsData(self->level->get_levelID(), self->selectedDifficultyBeatmap->get_difficulty(), self->selectedDifficultyBeatmap->get_parentDifficultyBeatmapSet()->get_beatmapCharacteristic());
-                    currentScore = playerLevelStatsData->highScore;
-                    if (playerLevelStatsData->validScore)
-                    {
-                        //calculate maximum possilble score
-                        int currentDifficultyMaxScore = calculateMaxScore(self->selectedDifficultyBeatmap->get_beatmapData()->notesCount);
-                        //calculate actual score percentage
-                        double currentDifficultyPercentageScore = calculatePercentage(currentDifficultyMaxScore, playerLevelStatsData->highScore);
-                        currentPercentage = currentDifficultyPercentageScore;
-                        //add percentage to highScoreText if it isn't disabled
-                        if (getConfig().config["Enable Menu Highscore Percentage"].GetBool())
-                        { 
-                            std::string highScoreText = std::to_string(playerLevelStatsData->highScore) + " " + "(" + Round(currentDifficultyPercentageScore) + "%)";
-                            self->highScoreText->SetText(il2cpp_utils::createcsstr(highScoreText));
-                        }
-                        return;
-                    }
-                }
-                // Set currentScore and currentPercentage to 0, if no playerData exists
-                // Does this even do anything!?
-                currentScore = 0;
-                currentPercentage = 0;
-                
-                // self->playerStatsContainer.SetActive(false);
+        PlayerLevelStatsData* playerLevelStatsData = playerData->GetPlayerLevelStatsData(difficultyBeatmap->get_level()->get_levelID(), difficultyBeatmap->get_difficulty(), difficultyBeatmap->get_parentDifficultyBeatmapSet()->get_beatmapCharacteristic());
+        currentScore = playerLevelStatsData->highScore;
+        if (playerLevelStatsData->validScore)
+        {
+            //calculate maximum possilble score
+            int currentDifficultyMaxScore = calculateMaxScore(difficultyBeatmap->get_beatmapData()->cuttableNotesType);
+            //calculate actual score percentage
+            double currentDifficultyPercentageScore = calculatePercentage(currentDifficultyMaxScore, playerLevelStatsData->highScore);
+            currentPercentage = currentDifficultyPercentageScore;
+            //add percentage to highScoreText if it isn't disabled
+            if (getConfig().config["Enable Menu Highscore Percentage"].GetBool())
+            { 
+                std::string highScoreText = std::to_string(playerLevelStatsData->highScore) + " " + "(" + Round(currentDifficultyPercentageScore) + "%)";
+                self->highScoreText->SetText(il2cpp_utils::createcsstr(highScoreText));
             }
+            return;
+        }
+    }
+    // Set currentScore and currentPercentage to 0, if no playerData exists
+    // Does this even do anything!?
+    currentScore = 0;
+    currentPercentage = 0;
 }
 
 MAKE_HOOK_OFFSETLESS(Results, void, ResultsViewController* self) {
@@ -154,12 +116,12 @@ MAKE_HOOK_OFFSETLESS(Results, void, ResultsViewController* self) {
     if (self->levelCompletionResults->levelEndStateType == LevelCompletionResults::LevelEndStateType::Cleared)
     {
         modifiedScore = self->levelCompletionResults->modifiedScore;
-        maxScore = calculateMaxScore(self->difficultyBeatmap->get_beatmapData()->notesCount);
+        maxScore = calculateMaxScore(self->difficultyBeatmap->get_beatmapData()->cuttableNotesType);
         //use modifiedScore with negative multipliers
 
         GameplayModifiers* mods = self->levelCompletionResults->gameplayModifiers;
 
-        if (mods->get_noFail() || mods->get_noObstacles() || mods->noArrows || mods->noBombs)
+        if (mods->get_noFail() || mods->get_enabledObstacleType().NoObstacles || mods->noArrows || mods->noBombs)
         {
             resultScore = modifiedScore;
         }
@@ -182,7 +144,7 @@ MAKE_HOOK_OFFSETLESS(Results, void, ResultsViewController* self) {
             //Set Percentage to first line
             rankTextLine1 = "<line-height=30%><size=60%>" + Round(resultPercentage) + "<size=45%>%";
             // Add Average Cut Score to 2nd Line if enabled
-            if (getConfig().config["Enable Avarage Cut Score"].GetBool() && !getConfig().config["Enable Score Percentage Difference"].GetBool())
+            if (getConfig().config["Enable Average Cut Score"].GetBool() && !getConfig().config["Enable Score Percentage Difference"].GetBool())
             {
                 int averageCutScore = self->levelCompletionResults->averageCutScore;
                 rankTextLine2 = "\n<size=40%>" + std::to_string(averageCutScore) + "<size=30%> / <size=0%>115";
@@ -247,29 +209,34 @@ void Reset() {
     getConfig().config.RemoveAllMembers();
     getConfig().config.SetObject();
     rapidjson::Document::AllocatorType& allocator = getConfig().config.GetAllocator();
-    getConfig().config.AddMember("Enable Avarage Cut Score", Config.EnableAvarageCutScore, allocator);
+    getConfig().config.AddMember("Enable Average Cut Score", Config.EnableAverageCutScore, allocator);
     getConfig().config.AddMember("Enable Level End Rank Display", Config.EnableLevelEndRank, allocator);
     getConfig().config.AddMember("Enable Menu Highscore Percentage", Config.EnableMenuHighscore, allocator);
     getConfig().config.AddMember("Enable Score Difference", Config.EnableScoreDifference, allocator);
     getConfig().config.AddMember("Enable Score Percentage Difference", Config.EnableScorePercentageDifference, allocator);
     getConfig().Write();
-}   
+}
 
-
-
+std::string version;
 
 extern "C" void setup(ModInfo& info) {
     info.id = "ScorePercentage";
-    info.version = "0.1.0";
-    modInfo = info;
+    info.version = "2.1.0";
     
+    version = info.version;
+
     getConfig().Load();
-    if (!getConfig().config.HasMember("Enable Avarage Cut Score")) {
+    if (!getConfig().config.HasMember("Enable Average Cut Score")) {
 		Reset();
 	}
 }
 extern "C" void load() {
     il2cpp_functions::Init();
+
+    QuestUI::Init();
+
+    custom_types::Register::RegisterType<ScorePercentage::UIController>();
+    QuestUI::Register::RegisterModSettingsViewController<ScorePercentage::UIController*>(ModInfo{"Score Percentage", version}, "Score Percentage");
     INSTALL_HOOK_OFFSETLESS(Results, il2cpp_utils::FindMethod("", "ResultsViewController", "SetDataToUI"));
-    INSTALL_HOOK_OFFSETLESS(Menu, il2cpp_utils::FindMethod("", "StandardLevelDetailView", "RefreshContent"));
+    INSTALL_HOOK_OFFSETLESS(Menu, il2cpp_utils::FindMethodUnsafe("", "LevelStatsView", "ShowStats", 2));
 }
