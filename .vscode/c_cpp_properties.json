@@ -2,19 +2,16 @@
   "configurations": [
     {
       "defines": [
-        "MOD_ID=\"ScorePercentage\"",
-        "VERSION=\"2.0.0\"",
         "__GNUC__",
         "__aarch64__",
-        "ID=\"ScorePercentage\""
       ],
       "includePath": [
         "${workspaceFolder}/**",
-        "${workspaceFolder}/extern/modloader/shared/**",
-        "c:/Program Files/Unity/Hub/Editor/2019.3.1f1/Editor/Data/il2cpp/libil2cpp",
-        "d:/android-ndk-r21d/**",
-        "${workspaceFolder}/shared",
-        "${workspaceFolder}/extern"
+        "${workspaceFolder}/include/**",
+        "${workspaceFolder}/shared/**",
+        "${workspaceFolder}/extern/**",
+        "${workspaceFolder}/extern/codegen/include/**",
+        "C:/Development/Tools/android-ndk-r21d/**"
       ],
       "name": "Quest",
       "cStandard": "c11",

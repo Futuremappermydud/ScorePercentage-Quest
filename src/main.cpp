@@ -1,5 +1,4 @@
-#include "../include/mod_interface.hpp"
-#include "../include/UI.hpp"
+#include "UI.hpp"
 
 static ModInfo modInfo;
 
@@ -9,7 +8,7 @@ static ModInfo modInfo;
 using namespace GlobalNamespace;
 using namespace TMPro;
 
-static const Logger& getLogger() {
+const Logger& getLogger() {
     static const Logger logger(modInfo);
     return logger;
 }
