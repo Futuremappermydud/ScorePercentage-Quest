@@ -1,9 +1,39 @@
-#include "UI.hpp"
 
-static ModInfo modInfo;
+
+
+#include "beatsaber-hook/shared/utils/utils.h"
+#include "beatsaber-hook/shared/utils/il2cpp-utils.hpp"
+
+#include "custom-types/shared/register.hpp"
+#include "custom-types/shared/types.hpp"
+
+#include "customlogger.hpp"
+#include "customconfig.hpp"
+
+#include "UIController.hpp"
 
 #include <iomanip>
 #include <sstream>
+
+#include "GlobalNamespace/ResultsViewController.hpp"
+#include "GlobalNamespace/StandardLevelDetailView.hpp"
+#include "GlobalNamespace/PlayerLevelStatsData.hpp"
+#include "System/Math.hpp"
+#include "GlobalNamespace/ScoreFormatter.hpp"
+#include "UnityEngine/GameObject.hpp"
+#include "TMPro/TextMeshProUGUI.hpp"
+#include "GlobalNamespace/LevelCompletionResults.hpp"
+#include "GlobalNamespace/LevelStatsView.hpp"
+#include "GlobalNamespace/PlayerData.hpp"
+#include "GlobalNamespace/IDifficultyBeatmap.hpp"
+#include "GlobalNamespace/IDifficultyBeatmapSet.hpp"
+#include "GlobalNamespace/IBeatmapLevel.hpp"
+#include "GlobalNamespace/BeatmapData.hpp"
+#include "GlobalNamespace/GameplayModifiers.hpp"
+#include "questui/shared/QuestUI.hpp"
+
+static ModInfo modInfo;
+
 
 using namespace GlobalNamespace;
 using namespace TMPro;
@@ -18,13 +48,7 @@ Configuration& getConfig() {
   return configuration;
 }
 
-static struct Config_t {
-    bool EnableMenuHighscore = true;
-    bool EnableLevelEndRank = true;
-    bool EnableAverageCutScore = true;
-    bool EnableScoreDifference = true;
-    bool EnableScorePercentageDifference = true;
-} Config;
+Config_t Config;
 
 static std::string Round (float val, int precision = 2)
 {
@@ -81,7 +105,7 @@ MAKE_HOOK_OFFSETLESS(Menu, void, LevelStatsView* self, IDifficultyBeatmap* diffi
             double currentDifficultyPercentageScore = calculatePercentage(currentDifficultyMaxScore, playerLevelStatsData->highScore);
             currentPercentage = currentDifficultyPercentageScore;
             //add percentage to highScoreText if it isn't disabled
-            if (getConfig().config["Enable Menu Highscore Percentage"].GetBool())
+            if (Config.MenuHighscore.GetValue())
             { 
                 std::string highScoreText = std::to_string(playerLevelStatsData->highScore) + " " + "(" + Round(currentDifficultyPercentageScore) + "%)";
                 self->highScoreText->SetText(il2cpp_utils::createcsstr(highScoreText));
@@ -138,19 +162,19 @@ MAKE_HOOK_OFFSETLESS(Results, void, ResultsViewController* self) {
 
 
         //Rank Text Changes
-        if (getConfig().config["Enable Level End Rank Display"].GetBool())
+        if (Config.LevelEndRank.GetValue())
         {
             //Set Percentage to first line
             rankTextLine1 = "<line-height=30%><size=60%>" + Round(resultPercentage) + "<size=45%>%";
             // Add Average Cut Score to 2nd Line if enabled
-            if (getConfig().config["Enable Average Cut Score"].GetBool() && !getConfig().config["Enable Score Percentage Difference"].GetBool())
+            if (Config.AverageCutScore.GetValue() && !Config.ScorePercentageDifference.GetValue())
             {
                 int averageCutScore = self->levelCompletionResults->averageCutScore;
                 rankTextLine2 = "\n<size=40%>" + std::to_string(averageCutScore) + "<size=30%> / <size=0%>115";
 
             }
             // Add Percent Difference to 2nd Line if enabled and previous Score exists
-            else if (getConfig().config["Enable Score Percentage Difference"].GetBool() && currentPercentage != 0)
+            else if (Config.ScorePercentageDifference.GetValue() && currentPercentage != 0)
             {
                 double percentageDifference = resultPercentage - currentPercentage;
                 std::string percentageDifferenceColor;
@@ -175,7 +199,7 @@ MAKE_HOOK_OFFSETLESS(Results, void, ResultsViewController* self) {
 
 
         //Add ScoreDifference Calculation if enabled
-        if (getConfig().config["Enable Score Difference"].GetBool())
+        if (Config.ScoreDifference.GetValue())
         {
             std::string scoreDifference = "";
             std::string scoreDifferenceColor = "";
@@ -204,38 +228,26 @@ MAKE_HOOK_OFFSETLESS(Results, void, ResultsViewController* self) {
     }
 }
 
-void Reset() {
-    getConfig().config.RemoveAllMembers();
-    getConfig().config.SetObject();
-    rapidjson::Document::AllocatorType& allocator = getConfig().config.GetAllocator();
-    getConfig().config.AddMember("Enable Average Cut Score", Config.EnableAverageCutScore, allocator);
-    getConfig().config.AddMember("Enable Level End Rank Display", Config.EnableLevelEndRank, allocator);
-    getConfig().config.AddMember("Enable Menu Highscore Percentage", Config.EnableMenuHighscore, allocator);
-    getConfig().config.AddMember("Enable Score Difference", Config.EnableScoreDifference, allocator);
-    getConfig().config.AddMember("Enable Score Percentage Difference", Config.EnableScorePercentageDifference, allocator);
-    getConfig().Write();
-}
-
-std::string version;
 
 extern "C" void setup(ModInfo& info) {
     info.id = "ScorePercentage";
-    info.version = "2.1.0";
-    
-    version = info.version;
-
+    info.version = VERSION;
+    modInfo = info;
     getConfig().Load();
-    if (!getConfig().config.HasMember("Enable Average Cut Score")) {
-		Reset();
-	}
+    Config.MenuHighscore.Load();
+    Config.LevelEndRank.Load();
+    Config.AverageCutScore.Load();
+    Config.ScoreDifference.Load();
+    Config.ScorePercentageDifference.Load();
 }
+
 extern "C" void load() {
     il2cpp_functions::Init();
 
     QuestUI::Init();
 
     custom_types::Register::RegisterType<ScorePercentage::UIController>();
-    QuestUI::Register::RegisterModSettingsViewController<ScorePercentage::UIController*>(ModInfo{"Score Percentage", version}, "Score Percentage");
+    QuestUI::Register::RegisterModSettingsViewController<ScorePercentage::UIController*>(modInfo, "Score Percentage Settings");
     INSTALL_HOOK_OFFSETLESS(Results, il2cpp_utils::FindMethod("", "ResultsViewController", "SetDataToUI"));
     INSTALL_HOOK_OFFSETLESS(Menu, il2cpp_utils::FindMethodUnsafe("", "LevelStatsView", "ShowStats", 2));
 }
