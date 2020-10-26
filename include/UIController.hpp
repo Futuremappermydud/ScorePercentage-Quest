@@ -1,6 +1,5 @@
 #pragma once
 
-#include "mod_interface.hpp"
 #include "HMUI/ViewController.hpp"
 #include "extern/custom-types/shared/macros.hpp"
 #include "extern/custom-types/shared/register.hpp"
