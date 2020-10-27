@@ -2,12 +2,11 @@
 #include "questui/shared/CustomTypes/Components/Backgroundable.hpp"
 #include "UnityEngine/Events/UnityAction_1.hpp"
 #include "UnityEngine/RectOffset.hpp"
+#include "UnityEngine/Vector3.hpp"
 
 #include "customconfig.hpp"
 
 #include "questui/shared/BeatSaberUI.hpp"
-
-#define AddConfigToggle(parent, value) CreateToggle(parent, value.GetName(), il2cpp_utils::MakeAction<UnityEngine::Events::UnityAction_1<bool>>(il2cpp_functions::class_get_type(classof(UnityEngine::Events::UnityAction_1<bool>*)), (void*)nullptr, +[](bool toggle) { value.SetValue(toggle); }))->GetComponent<UI::Toggle*>()->set_isOn(value.GetValue());
 
 using namespace QuestUI::BeatSaberUI;
 using namespace UnityEngine::UI;
@@ -27,10 +26,10 @@ void ScorePercentage::UIController::DidActivate(bool firstActivation, bool added
 		contentSizeFitter->set_horizontalFit(ContentSizeFitter::FitMode::PreferredSize);
 		contentSizeFitter->set_verticalFit(ContentSizeFitter::FitMode::PreferredSize);
 		Transform* transform = layout->get_transform();
-		AddConfigToggle(transform, Config.MenuHighscore);
-		AddConfigToggle(transform, Config.LevelEndRank);
-		AddConfigToggle(transform, Config.AverageCutScore);
-		AddConfigToggle(transform, Config.ScoreDifference);
-		AddConfigToggle(transform, Config.ScorePercentageDifference);
+		AddConfigValueToggle(transform, getCustomConfig().MenuHighscore);
+		AddConfigValueToggle(transform, getCustomConfig().LevelEndRank);
+		AddConfigValueToggle(transform, getCustomConfig().AverageCutScore);
+		AddConfigValueToggle(transform, getCustomConfig().ScoreDifference);
+		AddConfigValueToggle(transform, getCustomConfig().ScorePercentageDifference);
 	}
 }

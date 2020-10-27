@@ -34,7 +34,6 @@
 
 static ModInfo modInfo;
 
-
 using namespace GlobalNamespace;
 using namespace TMPro;
 
@@ -44,11 +43,11 @@ const Logger& getLogger() {
 }
 
 Configuration& getConfig() {
-  static Configuration configuration(modInfo);
-  return configuration;
+    static Configuration configuration(modInfo);
+    return configuration;
 }
 
-Config_t Config;
+DEFINE_CONFIG(CustomConfig);
 
 static std::string Round (float val, int precision = 2)
 {
@@ -105,7 +104,7 @@ MAKE_HOOK_OFFSETLESS(Menu, void, LevelStatsView* self, IDifficultyBeatmap* diffi
             double currentDifficultyPercentageScore = calculatePercentage(currentDifficultyMaxScore, playerLevelStatsData->highScore);
             currentPercentage = currentDifficultyPercentageScore;
             //add percentage to highScoreText if it isn't disabled
-            if (Config.MenuHighscore.GetValue())
+            if (getCustomConfig().MenuHighscore.GetValue())
             { 
                 std::string highScoreText = std::to_string(playerLevelStatsData->highScore) + " " + "(" + Round(currentDifficultyPercentageScore) + "%)";
                 self->highScoreText->SetText(il2cpp_utils::createcsstr(highScoreText));
@@ -162,19 +161,19 @@ MAKE_HOOK_OFFSETLESS(Results, void, ResultsViewController* self) {
 
 
         //Rank Text Changes
-        if (Config.LevelEndRank.GetValue())
+        if (getCustomConfig().LevelEndRank.GetValue())
         {
             //Set Percentage to first line
             rankTextLine1 = "<line-height=30%><size=60%>" + Round(resultPercentage) + "<size=45%>%";
             // Add Average Cut Score to 2nd Line if enabled
-            if (Config.AverageCutScore.GetValue() && !Config.ScorePercentageDifference.GetValue())
+            if (getCustomConfig().AverageCutScore.GetValue() && !getCustomConfig().ScorePercentageDifference.GetValue())
             {
                 int averageCutScore = self->levelCompletionResults->averageCutScore;
                 rankTextLine2 = "\n<size=40%>" + std::to_string(averageCutScore) + "<size=30%> / <size=0%>115";
 
             }
             // Add Percent Difference to 2nd Line if enabled and previous Score exists
-            else if (Config.ScorePercentageDifference.GetValue() && currentPercentage != 0)
+            else if (getCustomConfig().ScorePercentageDifference.GetValue() && currentPercentage != 0)
             {
                 double percentageDifference = resultPercentage - currentPercentage;
                 std::string percentageDifferenceColor;
@@ -199,7 +198,7 @@ MAKE_HOOK_OFFSETLESS(Results, void, ResultsViewController* self) {
 
 
         //Add ScoreDifference Calculation if enabled
-        if (Config.ScoreDifference.GetValue())
+        if (getCustomConfig().ScoreDifference.GetValue())
         {
             std::string scoreDifference = "";
             std::string scoreDifferenceColor = "";
@@ -227,18 +226,12 @@ MAKE_HOOK_OFFSETLESS(Results, void, ResultsViewController* self) {
 
     }
 }
-
-
 extern "C" void setup(ModInfo& info) {
     info.id = "ScorePercentage";
     info.version = VERSION;
     modInfo = info;
     getConfig().Load();
-    Config.MenuHighscore.Load();
-    Config.LevelEndRank.Load();
-    Config.AverageCutScore.Load();
-    Config.ScoreDifference.Load();
-    Config.ScorePercentageDifference.Load();
+    getCustomConfig().Init(&getConfig());
 }
 
 extern "C" void load() {
