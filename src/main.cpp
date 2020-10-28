@@ -17,6 +17,7 @@
 
 #include "GlobalNamespace/ResultsViewController.hpp"
 #include "GlobalNamespace/StandardLevelDetailView.hpp"
+#include "GlobalNamespace/PlatformLeaderboardViewController.hpp"
 #include "GlobalNamespace/PlayerLevelStatsData.hpp"
 #include "System/Math.hpp"
 #include "GlobalNamespace/ScoreFormatter.hpp"
@@ -169,7 +170,7 @@ MAKE_HOOK_OFFSETLESS(Results, void, ResultsViewController* self) {
             if (getCustomConfig().AverageCutScore.GetValue() && !getCustomConfig().ScorePercentageDifference.GetValue())
             {
                 int averageCutScore = self->levelCompletionResults->averageCutScore;
-                rankTextLine2 = "\n<size=40%>" + std::to_string(averageCutScore) + "<size=30%> / <size=0%>115";
+                rankTextLine2 = "\n<size=40%>" + std::to_string(averageCutScore) + "<size=30%> / <size=40%>115";
 
             }
             // Add Percent Difference to 2nd Line if enabled and previous Score exists
@@ -226,6 +227,11 @@ MAKE_HOOK_OFFSETLESS(Results, void, ResultsViewController* self) {
 
     }
 }
+
+MAKE_HOOK_OFFSETLESS(Reset, void, PlatformLeaderboardViewController* self, IDifficultyBeatmap* difficultyBeatmap) {
+    Reset(self, difficultyBeatmap);
+}
+
 extern "C" void setup(ModInfo& info) {
     info.id = "ScorePercentage";
     info.version = VERSION;
@@ -233,6 +239,8 @@ extern "C" void setup(ModInfo& info) {
     getConfig().Load();
     getCustomConfig().Init(&getConfig());
 }
+
+
 
 extern "C" void load() {
     il2cpp_functions::Init();
@@ -243,4 +251,5 @@ extern "C" void load() {
     QuestUI::Register::RegisterModSettingsViewController<ScorePercentage::UIController*>(modInfo, "Score Percentage Settings");
     INSTALL_HOOK_OFFSETLESS(Results, il2cpp_utils::FindMethod("", "ResultsViewController", "SetDataToUI"));
     INSTALL_HOOK_OFFSETLESS(Menu, il2cpp_utils::FindMethodUnsafe("", "LevelStatsView", "ShowStats", 2));
+    INSTALL_HOOK_OFFSETLESS(Reset, il2cpp_utils::FindMethodUnsafe("", "PlatformLeaderboardViewController", "SetData", 1));
 }
