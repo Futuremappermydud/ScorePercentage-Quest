@@ -7,7 +7,7 @@
 #include "customconfig.hpp"
 
 #include "questui/shared/BeatSaberUI.hpp"
-
+#include "beatsaber-hook/shared/utils/il2cpp-utils.hpp"
 using namespace QuestUI::BeatSaberUI;
 using namespace UnityEngine::UI;
 using namespace UnityEngine;
